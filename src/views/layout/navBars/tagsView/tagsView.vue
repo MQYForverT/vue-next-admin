@@ -33,296 +33,297 @@
 </template>
 
 <script lang="ts">
-import { toRefs, reactive, onMounted, computed, ref, nextTick, onBeforeUpdate, onBeforeMount, onUnmounted, getCurrentInstance, watch } from 'vue';
-import { useRoute, useRouter, onBeforeRouteUpdate } from 'vue-router';
-import screenfull from 'screenfull';
-import { useStore } from '/@/store/index.ts';
-import { setSession, getSession, removeSession } from '/@/utils/storage.ts';
-import Sortable from 'sortablejs';
-import Contextmenu from '/@/views/layout/navBars/tagsView/contextmenu.vue';
+import { toRefs, reactive, onMounted, computed, ref, nextTick, onBeforeUpdate, onBeforeMount, onUnmounted, getCurrentInstance, watch } from 'vue'
+import { useRoute, useRouter, onBeforeRouteUpdate } from 'vue-router'
+import screenfull from 'screenfull'
+import { useStore } from '/@/store/index.ts'
+import { setSession, getSession, removeSession } from '/@/utils/storage.ts'
+import Sortable from 'sortablejs'
+import Contextmenu from '/@/views/layout/navBars/tagsView/contextmenu.vue'
 export default {
 	name: 'layoutTagsView',
 	components: { Contextmenu },
 	setup() {
-		const { proxy } = getCurrentInstance() as any;
-		const tagsRefs = ref([]);
-		const scrollbarRef = ref();
-		const contextmenuRef = ref();
-		const tagsUlRef = ref();
-		const store = useStore();
-		const route = useRoute();
-		const router = useRouter();
+		const { proxy } = getCurrentInstance() as any
+		const tagsRefs = ref([])
+		const scrollbarRef = ref()
+		const contextmenuRef = ref()
+		const tagsUlRef = ref()
+		const store = useStore()
+		const route = useRoute()
+		const router = useRouter()
 		const state: any = reactive({
 			routePath: route.path,
 			dropdown: { x: '', y: '' },
 			tagsRefsIndex: 0,
 			tagsViewList: [],
 			sortable: '',
-			tagsViewRoutesList: [],
-		});
+			tagsViewRoutesList: []
+		})
 		// 动态设置 tagsView 风格样式
 		const setTagsStyle = computed(() => {
-			return store.state.themeConfig.themeConfig.tagsStyle;
-		});
+			return store.state.themeConfig.themeConfig.tagsStyle
+		})
 		// 获取布局配置信息
 		const getThemeConfig = computed(() => {
-			return store.state.themeConfig.themeConfig;
-		});
+			return store.state.themeConfig.themeConfig
+		})
 		// 存储 tagsViewList 到浏览器临时缓存中，页面刷新时，保留记录
 		const addBrowserSetSession = (tagsViewList: Array<object>) => {
-			setSession('tagsViewList', tagsViewList);
-		};
+			setSession('tagsViewList', tagsViewList)
+		}
 		// 获取 vuex 中的 tagsViewRoutes 列表
 		const getTagsViewRoutes = () => {
-			state.routePath = route.path;
-			state.tagsViewList = [];
-			if (!store.state.themeConfig.themeConfig.isCacheTagsView) removeSession('tagsViewList');
-			state.tagsViewRoutesList = store.state.tagsViewRoutes.tagsViewRoutes;
-			initTagsView();
-		};
+			state.routePath = route.path
+			state.tagsViewList = []
+			if (!store.state.themeConfig.themeConfig.isCacheTagsView) removeSession('tagsViewList')
+			state.tagsViewRoutesList = store.state.tagsViewRoutes.tagsViewRoutes
+			initTagsView()
+		}
 		// vuex 中获取路由信息：如果是设置了固定的（isAffix），进行初始化显示
 		const initTagsView = () => {
 			if (getSession('tagsViewList') && store.state.themeConfig.themeConfig.isCacheTagsView) {
-				state.tagsViewList = getSession('tagsViewList');
+				state.tagsViewList = getSession('tagsViewList')
 			} else {
 				state.tagsViewRoutesList.map((v: any) => {
-					if (v.meta.isAffix && !v.meta.isHide) state.tagsViewList.push({ ...v });
-				});
-				addTagsView(route.path);
+					if (v.meta.isAffix && !v.meta.isHide) state.tagsViewList.push({ ...v })
+				})
+				addTagsView(route.path)
 			}
 			// 初始化当前元素(li)的下标
-			getTagsRefsIndex(route.path);
+			getTagsRefsIndex(route.path)
 			// 添加初始化横向滚动条移动到对应位置
-			tagsViewmoveToCurrentTag();
-		};
+			tagsViewmoveToCurrentTag()
+		}
 		// 1、添加 tagsView：未设置隐藏（isHide）也添加到在 tagsView 中
 		const addTagsView = (path: string, to: any) => {
-			if (state.tagsViewList.some((v: any) => v.path === path)) return false;
-			const item = state.tagsViewRoutesList.find((v: any) => v.path === path);
-			if (item.meta.isLink && !item.meta.isIframe) return false;
-			item.query = to?.query ? to?.query : route.query;
-			state.tagsViewList.push({ ...item });
-			addBrowserSetSession(state.tagsViewList);
-		};
+			if (state.tagsViewList.some((v: any) => v.path === path)) return false
+			if (to && to.meta && to.meta.isViewRouter) return false
+			const item = state.tagsViewRoutesList.find((v: any) => v.path === path)
+			if (!item || (item.meta.isLink && !item.meta.isIframe)) return false
+			item.query = to && to.query ? to.query : route.query
+			state.tagsViewList.push({ ...item })
+			addBrowserSetSession(state.tagsViewList)
+		}
 		// 2、刷新当前 tagsView：
 		const refreshCurrentTagsView = (path: string) => {
-			proxy.mittBus.emit('onTagsViewRefreshRouterView', path);
-		};
+			proxy.mittBus.emit('onTagsViewRefreshRouterView', path)
+		}
 		// 3、关闭当前 tagsView：如果是设置了固定的（isAffix），不可以关闭
 		const closeCurrentTagsView = (path: string) => {
 			state.tagsViewList.map((v: any, k: number, arr: any) => {
 				if (!v.meta.isAffix) {
 					if (v.path === path) {
-						state.tagsViewList.splice(k, 1);
+						state.tagsViewList.splice(k, 1)
 						setTimeout(() => {
 							// 最后一个
-							if (state.tagsViewList.length === k) router.push({ path: arr[arr.length - 1].path, query: arr[arr.length - 1].query });
+							if (state.tagsViewList.length === k) router.push({ path: arr[arr.length - 1].path, query: arr[arr.length - 1].query })
 							// 否则，跳转到下一个
-							else router.push({ path: arr[k].path, query: arr[k].query });
-						}, 0);
+							else router.push({ path: arr[k].path, query: arr[k].query })
+						}, 0)
 					}
 				}
-			});
-			addBrowserSetSession(state.tagsViewList);
-		};
+			})
+			addBrowserSetSession(state.tagsViewList)
+		}
 		// 4、关闭其它 tagsView：如果是设置了固定的（isAffix），不进行关闭
 		const closeOtherTagsView = (path: string) => {
-			state.tagsViewList = [];
+			state.tagsViewList = []
 			state.tagsViewRoutesList.map((v: any) => {
-				if (v.meta.isAffix && !v.meta.isHide) state.tagsViewList.push({ ...v });
-			});
-			addTagsView(path);
-		};
+				if (v.meta.isAffix && !v.meta.isHide) state.tagsViewList.push({ ...v })
+			})
+			addTagsView(path)
+		}
 		// 5、关闭全部 tagsView：如果是设置了固定的（isAffix），不进行关闭
 		const closeAllTagsView = (path: string) => {
-			state.tagsViewList = [];
+			state.tagsViewList = []
 			state.tagsViewRoutesList.map((v: any) => {
 				if (v.meta.isAffix && !v.meta.isHide) {
-					state.tagsViewList.push({ ...v });
-					if (state.tagsViewList.some((v: any) => v.path === path)) router.push({ path, query: route.query });
-					else router.push({ path: v.path, query: route.query });
+					state.tagsViewList.push({ ...v })
+					if (state.tagsViewList.some((v: any) => v.path === path)) router.push({ path, query: route.query })
+					else router.push({ path: v.path, query: route.query })
 				}
-			});
-			addBrowserSetSession(state.tagsViewList);
-		};
+			})
+			addBrowserSetSession(state.tagsViewList)
+		}
 		// 6、开启当前页面全屏
 		const openCurrenFullscreen = (path: string) => {
-			const item = state.tagsViewList.find((v: any) => v.path === path);
+			const item = state.tagsViewList.find((v: any) => v.path === path)
 			nextTick(() => {
-				router.push({ path, query: item.query });
-				const element = document.querySelector('.layout-main');
-				const screenfulls: any = screenfull;
-				screenfulls.request(element);
-			});
-		};
+				router.push({ path, query: item.query })
+				const element = document.querySelector('.layout-main')
+				const screenfulls: any = screenfull
+				screenfulls.request(element)
+			})
+		}
 		// 当前项右键菜单点击
 		const onCurrentContextmenuClick = (data: any) => {
-			let { id, path } = data;
-			let currentTag = state.tagsViewList.find((v: any) => v.path === path);
+			let { id, path } = data
+			let currentTag = state.tagsViewList.find((v: any) => v.path === path)
 			switch (id) {
 				case 0:
-					refreshCurrentTagsView(path);
-					router.push({ path, query: currentTag.query });
-					break;
+					refreshCurrentTagsView(path)
+					router.push({ path, query: currentTag.query })
+					break
 				case 1:
-					closeCurrentTagsView(path);
-					break;
+					closeCurrentTagsView(path)
+					break
 				case 2:
-					router.push({ path, query: currentTag.query });
-					closeOtherTagsView(path);
-					break;
+					router.push({ path, query: currentTag.query })
+					closeOtherTagsView(path)
+					break
 				case 3:
-					closeAllTagsView(path);
-					break;
+					closeAllTagsView(path)
+					break
 				case 4:
-					openCurrenFullscreen(path);
-					break;
+					openCurrenFullscreen(path)
+					break
 			}
-		};
+		}
 		// 判断页面高亮
 		const isActive = (path: string) => {
-			return path === state.routePath;
-		};
+			return path === state.routePath
+		}
 		// 右键点击时：传 x,y 坐标值到子组件中（props）
 		const onContextmenu = (v: any, e: any) => {
-			const { clientX, clientY } = e;
-			state.dropdown.x = clientX;
-			state.dropdown.y = clientY;
-			contextmenuRef.value.openContextmenu(v);
-		};
+			const { clientX, clientY } = e
+			state.dropdown.x = clientX
+			state.dropdown.y = clientY
+			contextmenuRef.value.openContextmenu(v)
+		}
 		// 当前的 tagsView 项点击时
 		const onTagsClick = (v: any, k: number) => {
-			state.routePath = v.path;
-			state.tagsRefsIndex = k;
-			router.push(v);
-		};
+			state.routePath = v.path
+			state.tagsRefsIndex = k
+			router.push(v)
+		}
 		// 更新滚动条显示
 		const updateScrollbar = () => {
-			proxy.$refs.scrollbarRef.update();
-		};
+			proxy.$refs.scrollbarRef.update()
+		}
 		// 鼠标滚轮滚动
 		const onHandleScroll = (e: any) => {
-			proxy.$refs.scrollbarRef.$refs.wrap.scrollLeft += e.wheelDelta / 4;
-		};
+			proxy.$refs.scrollbarRef.$refs.wrap.scrollLeft += e.wheelDelta / 4
+		}
 		// tagsView 横向滚动
 		const tagsViewmoveToCurrentTag = () => {
 			nextTick(() => {
-				if (tagsRefs.value.length <= 0) return false;
+				if (tagsRefs.value.length <= 0) return false
 				// 当前 li 元素
-				let liDom = tagsRefs.value[state.tagsRefsIndex];
+				let liDom = tagsRefs.value[state.tagsRefsIndex]
 				// 当前 li 元素下标
-				let liIndex = state.tagsRefsIndex;
+				let liIndex = state.tagsRefsIndex
 				// 当前 ul 下 li 元素总长度
-				let liLength = tagsRefs.value.length;
+				let liLength = tagsRefs.value.length
 				// 最前 li
-				let liFirst: any = tagsRefs.value[0];
+				let liFirst: any = tagsRefs.value[0]
 				// 最后 li
-				let liLast: any = tagsRefs.value[tagsRefs.value.length - 1];
+				let liLast: any = tagsRefs.value[tagsRefs.value.length - 1]
 				// 当前滚动条的值
-				let scrollRefs = proxy.$refs.scrollbarRef.$refs.wrap;
+				let scrollRefs = proxy.$refs.scrollbarRef.$refs.wrap
 				// 当前滚动条滚动宽度
-				let scrollS = scrollRefs.scrollWidth;
+				let scrollS = scrollRefs.scrollWidth
 				// 当前滚动条偏移宽度
-				let offsetW = scrollRefs.offsetWidth;
+				let offsetW = scrollRefs.offsetWidth
 				// 当前滚动条偏移距离
-				let scrollL = scrollRefs.scrollLeft;
+				let scrollL = scrollRefs.scrollLeft
 				// 上一个 tags li dom
-				let liPrevTag: any = tagsRefs.value[state.tagsRefsIndex - 1];
+				let liPrevTag: any = tagsRefs.value[state.tagsRefsIndex - 1]
 				// 下一个 tags li dom
-				let liNextTag: any = tagsRefs.value[state.tagsRefsIndex + 1];
+				let liNextTag: any = tagsRefs.value[state.tagsRefsIndex + 1]
 				// 上一个 tags li dom 的偏移距离
-				let beforePrevL: any = '';
+				let beforePrevL: any = ''
 				// 下一个 tags li dom 的偏移距离
-				let afterNextL: any = '';
+				let afterNextL: any = ''
 				if (liDom === liFirst) {
 					// 头部
-					scrollRefs.scrollLeft = 0;
+					scrollRefs.scrollLeft = 0
 				} else if (liDom === liLast) {
 					// 尾部
-					scrollRefs.scrollLeft = scrollS - offsetW;
+					scrollRefs.scrollLeft = scrollS - offsetW
 				} else {
 					// 非头/尾部
-					if (liIndex === 0) beforePrevL = liFirst.offsetLeft - 5;
-					else beforePrevL = liPrevTag?.offsetLeft - 5;
-					if (liIndex === liLength) afterNextL = liLast.offsetLeft + liLast.offsetWidth + 5;
-					else afterNextL = liNextTag.offsetLeft + liNextTag.offsetWidth + 5;
+					if (liIndex === 0) beforePrevL = liFirst.offsetLeft - 5
+					else beforePrevL = liPrevTag ? liPrevTag.offsetLeft - 5 : -5
+					if (liIndex === liLength) afterNextL = liLast.offsetLeft + liLast.offsetWidth + 5
+					else afterNextL = liNextTag.offsetLeft + liNextTag.offsetWidth + 5
 					if (afterNextL > scrollL + offsetW) {
-						scrollRefs.scrollLeft = afterNextL - offsetW;
+						scrollRefs.scrollLeft = afterNextL - offsetW
 					} else if (beforePrevL < scrollL) {
-						scrollRefs.scrollLeft = beforePrevL;
+						scrollRefs.scrollLeft = beforePrevL
 					}
 				}
 				// 更新滚动条，防止不出现
-				updateScrollbar();
-			});
-		};
+				updateScrollbar()
+			})
+		}
 		// 获取 tagsView 的下标：用于处理 tagsView 点击时的横向滚动
 		const getTagsRefsIndex = (path: string) => {
 			if (state.tagsViewList.length > 0) {
-				state.tagsRefsIndex = state.tagsViewList.findIndex((item: any) => item.path === path);
+				state.tagsRefsIndex = state.tagsViewList.findIndex((item: any) => item.path === path)
 			}
-		};
+		}
 		// 设置 tagsView 可以进行拖拽
 		const initSortable = () => {
-			const el: any = document.querySelector('.layout-navbars-tagsview-ul');
-			if (!el) return false;
-			if (!getThemeConfig.value.isSortableTagsView) state.sortable && state.sortable.destroy();
+			const el: any = document.querySelector('.layout-navbars-tagsview-ul')
+			if (!el) return false
+			if (!getThemeConfig.value.isSortableTagsView) state.sortable && state.sortable.destroy()
 			if (getThemeConfig.value.isSortableTagsView) {
 				state.sortable = Sortable.create(el, {
 					animation: 300,
 					dataIdAttr: 'data-name',
 					onEnd: () => {
-						const sortEndList: any = [];
+						const sortEndList: any = []
 						state.sortable.toArray().map((val: any) => {
 							state.tagsViewList.map((v: any) => {
-								if (v.name === val) sortEndList.push({ ...v });
-							});
-						});
-						addBrowserSetSession(sortEndList);
-					},
-				});
+								if (v.name === val) sortEndList.push({ ...v })
+							})
+						})
+						addBrowserSetSession(sortEndList)
+					}
+				})
 			}
-		};
+		}
 		// 监听路由的变化，动态赋值给 tagsView
-		watch(store.state, (val) => {
-			if (val.tagsViewRoutes.tagsViewRoutes.length === state.tagsViewRoutesList.length) return false;
-			getTagsViewRoutes();
-		});
+		watch(store.state, val => {
+			if (val.tagsViewRoutes.tagsViewRoutes.length === state.tagsViewRoutesList.length) return false
+			getTagsViewRoutes()
+		})
 		// 页面加载前
 		onBeforeMount(() => {
 			// 监听非本页面调用 0 刷新当前，1 关闭当前，2 关闭其它，3 关闭全部 4 当前页全屏
 			proxy.mittBus.on('onCurrentContextmenuClick', (data: object) => {
-				onCurrentContextmenuClick(data);
-			});
+				onCurrentContextmenuClick(data)
+			})
 			// 监听布局配置界面开启/关闭拖拽
 			proxy.mittBus.on('openOrCloseSortable', () => {
-				initSortable();
-			});
-		});
+				initSortable()
+			})
+		})
 		// 页面卸载时
 		onUnmounted(() => {
 			// 取消非本页面调用监听
-			proxy.mittBus.off('onCurrentContextmenuClick');
+			proxy.mittBus.off('onCurrentContextmenuClick')
 			// 取消监听布局配置界面开启/关闭拖拽
-			proxy.mittBus.off('openOrCloseSortable');
-		});
+			proxy.mittBus.off('openOrCloseSortable')
+		})
 		// 页面更新时
 		onBeforeUpdate(() => {
-			tagsRefs.value = [];
-		});
+			tagsRefs.value = []
+		})
 		// 页面加载时
 		onMounted(() => {
 			// 初始化 vuex 中的 tagsViewRoutes 列表
-			getTagsViewRoutes();
-			initSortable();
-		});
+			getTagsViewRoutes()
+			initSortable()
+		})
 		// 路由更新时
-		onBeforeRouteUpdate((to) => {
-			state.routePath = to.path;
-			addTagsView(to.path, to);
-			getTagsRefsIndex(to.path);
-			tagsViewmoveToCurrentTag();
-		});
+		onBeforeRouteUpdate(to => {
+			state.routePath = to.path
+			addTagsView(to.path, to)
+			getTagsRefsIndex(to.path)
+			tagsViewmoveToCurrentTag()
+		})
 		return {
 			isActive,
 			onContextmenu,
@@ -338,10 +339,10 @@ export default {
 			refreshCurrentTagsView,
 			closeCurrentTagsView,
 			onCurrentContextmenuClick,
-			...toRefs(state),
-		};
-	},
-};
+			...toRefs(state)
+		}
+	}
+}
 </script>
 
 <style scoped lang="scss">

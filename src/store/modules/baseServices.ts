@@ -1,5 +1,5 @@
 import { Module } from 'vuex'
-import { getSession } from '/@/utils/storage.ts';
+import { getbaseData } from '/@/api/baseService'
 
 const baseServicesModule: Module<BaseServicesState, RootStateTypes> = {
 	namespaced: true,
@@ -14,12 +14,10 @@ const baseServicesModule: Module<BaseServicesState, RootStateTypes> = {
 	},
 	actions: {
 		// 设置用户信息
-		async setBaseData({ commit },data: object) {
-			if (data) {
-				commit('setBaseServices', data);
-			} else {
-				if (getSession('baseServices')) commit('setBaseServices', getSession('baseServices'));
-			}
+		async setBaseData({ commit }) {
+			 const { datas } = await getbaseData({})
+			 // 存储用户信息到浏览器缓存
+			 commit('setBaseServices',  datas[0]);
 		}
 	}
 }

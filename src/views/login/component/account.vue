@@ -16,12 +16,11 @@
 import { toRefs, reactive, defineComponent, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { initAllFun, getBackEndControlRoutes, setBackEndControlRoutesFun } from '/@/router/index.ts'
+// import { initAllFun, getBackEndControlRoutes, setBackEndControlRoutesFun } from '/@/router/index.ts'
 import { useStore } from '/@/store/index.ts'
 import { setSession } from '/@/utils/storage.ts'
 import { formatAxis } from '/@/utils/formatTime.ts'
 import { login } from '/@/api/login'
-import { getbaseData } from '/@/api/baseService'
 import Base64 from '/@/utils/base64'
 
 export default defineComponent({
@@ -42,16 +41,6 @@ export default defineComponent({
 		const currentTime = computed(() => {
 			return formatAxis(new Date())
 		})
-		const getbaseDatas = () => {
-			getbaseData({}).then(res => {
-				const { datas } = res
-				
-				// 存储用户信息到浏览器缓存
-				setSession('baseServices', datas[0])
-				// 1、请注意执行顺序(存储用户信息到vuex)
-				store.dispatch('baseServices/setBaseData', datas[0])
-			})
-		}
 		// 登录
 		const onSignIn = () => {
 			state.loading.signIn = true
@@ -104,15 +93,14 @@ export default defineComponent({
 						setSession('userInfo', userInfos)
 						// 1、请注意执行顺序(存储用户信息到vuex)
 						store.dispatch('userInfos/setUserInfos', userInfos)
-
-						getbaseDatas()
-
-						// 前端控制路由，2、请注意执行顺序
-						getBackEndControlRoutes((res: any) => {
-							setBackEndControlRoutesFun(res, () => {
-								signInSuccess()
-							})
-						})
+						
+						signInSuccess()
+						// 前端控制路由
+						// getBackEndControlRoutes((res: any) => {
+						// 	setBackEndControlRoutesFun(res, () => {
+						// 		signInSuccess()
+						// 	})
+						// })
 					})
 					.finally(() => {
 						state.loading.signIn = false
