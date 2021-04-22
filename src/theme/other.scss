@@ -1,0 +1,59 @@
+/* wangeditor富文本编辑器
+------------------------------- */
+.w-e-toolbar {
+	border: 1px solid #ebeef5 !important;
+	border-bottom: 1px solid #ebeef5 !important;
+	border-top-left-radius: 3px;
+	border-top-right-radius: 3px;
+	z-index: 2 !important;
+}
+.w-e-text-container {
+	border: 1px solid #ebeef5 !important;
+	border-top: none !important;
+	border-bottom-left-radius: 3px;
+	border-bottom-right-radius: 3px;
+	z-index: 1 !important;
+}
+
+.filtering{
+	.filtering-list-flex {
+		&:last-of-type {
+			.filtering-list-item {
+				border-bottom: none !important;
+			}
+		}
+		.filtering-list-title {
+			float: left;
+			width: 94px;
+			font-weight: 700;
+			position: relative;
+			color: #909399;
+			margin: 15px 0;
+			&:after {
+				content: '';
+				position: absolute;
+				border: 1px solid #909399;
+				border-width: 0 1px 1px 0;
+				width: 4px;
+				height: 4px;
+				transform: rotate(-45deg) translateY(-50%);
+				right: 10px;
+				top: 50%;
+			}
+		}
+		.filtering-list-item {
+			border-bottom: 1px dotted #e0e0e0;
+			margin-left: 94px;
+			height: 50px;
+			overflow: hidden;
+			position: relative;
+			display: flex;
+			align-items: center;
+		}
+	}
+	
+	.form-search-footer{
+		display: flex;
+		justify-content: flex-end;
+	}
+}
